@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int           @id @unique @default(autoincrement())
+  id42          Int?           @unique
+  username      String        @unique
+  password      String?
+  image_url     String?
+
+  enable2fa     Boolean       @default(false)
+  secret2fa     String?       @unique
+
+  friends              User[] @relation("friends")
+  friendsRelation      User[] @relation("friends")
+  blocked_user         User[] @relation("blocked_user")
+  blocked_userRelation User[] @relation("blocked_user")
+
+  user_status UserStatus @default(DISCONNECTED)
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @default(now()) @updatedAt
+
+  Game        Game[]
+  Message     Message[]
+
+  group_owner Group[]         @relation("group_owner")
+  group_admin Group[]         @relation(name: "group_admin")
+  group_users Group[]         @relation(name: "group_users")
+
+  GroupSanction GroupSanction[]
+}
+
+model Game {
+  id                 String    @id @unique @default(cuid())
+  players            User[]
+  status             GameState @default(WAITING)
+  is_player_a_winner Boolean?
+  hardcore           Boolean @default(false)
+  game_data          Json?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @default(now()) @updatedAt
+}
+
+model Message {
+  id         String   @id @unique @default(cuid())
+  sender     User     @relation(fields: [senderId], references: [id])
+  content    String
+  created_at DateTime @default(now())
+  senderId   Int
+  Group      Group?   @relation(fields: [groupId], references: [id])
+  groupId    String?
+}
+
+model Group {
+  id         String          @id @unique @default(cuid())
+  owner      User            @relation(fields: [ownerId], references: [id], name: "group_owner")
+  type       GroupType       @default(PUBLIC)
+  password   String          @default("")
+  admin      User[]          @relation(name: "group_admin")
+  users      User[]          @relation(name: "group_users")
+  sanctions  GroupSanction[] @relation(name: "group_sanctions")
+  created_at DateTime        @default(now())
+  updated_at DateTime        @default(now()) @updatedAt
+  Message    Message[]
+  ownerId    Int
+}
+
+model GroupSanction {
+  id                String       @id @unique @default(cuid())
+  group             Group        @relation(fields: [groupId], references: [id], name: "group_sanctions", onDelete: Cascade)
+  groupId           String
+  sanctioned_user   User         @relation(fields: [sanctioned_userId], references: [id])
+  sanctioned_userId Int
+  expired_at        DateTime
+  type              SanctionType
+}
+
+enum SanctionType {
+  MUTE
+  BAN
+}
+
+enum GameState {
+  WAITING
+  IN_PROGRESS
+  FINISH
+  FAILED_UNACCEPTED_GAME
+  FAILED_USER_A_QUIT
+  FAILED_USER_B_QUIT
+}
+
+enum GroupType {
+  PUBLIC
+  PRIVATE_WITH_PASSWORD
+  PRIVATE
+}
+
+enum UserStatus {
+  IN_GAME
+  CONNECTED
+  DISCONNECTED
+}

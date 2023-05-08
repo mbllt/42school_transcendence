@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  backend:
+    image: backend
+    container_name: backend
+    build:
+      context: ./
+      dockerfile: ./docker/backend/Dockerfile
+    restart: on-failure
+    tty: true
+    stdin_open: true
+    env_file:
+      - ./docker/backend/.env
+    ports:
+      - "5555:5555"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    image: frontend
+    container_name: frontend
+    build:
+      context: ./
+      dockerfile: ./docker/frontend/Dockerfile
+    restart: on-failure
+    tty: true
+    stdin_open: true
+    ports:
+      - "5173:5173"
+    
+  database:
+    image: postgres:14
+    container_name: database
+    restart: on-failure
+    tty: true
+    stdin_open: true
+    env_file:
+      - ./docker/database/.env
+    volumes:
+      - postgresdata:/data/db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "ls"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  prisma-studio:
+    container_name: prisma-studio
+    image: timothyjmiller/prisma-studio:latest
+    restart: unless-stopped
+    build:
+      context: ./
+      dockerfile: ./docker/prisma-studio/Dockerfile
+    ports:
+      - 5556:5556
+    env_file:
+      - ./docker/prisma-studio/.env
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  postgresdata:

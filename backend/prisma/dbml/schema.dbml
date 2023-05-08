@@ -1,0 +1,107 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id Int [pk, increment]
+  id42 Int [unique]
+  username String [unique, not null]
+  password String
+  image_url String
+  enable2fa Boolean [not null, default: false]
+  secret2fa String [unique]
+  friends User [not null]
+  friendsRelation User [not null]
+  blocked_user User [not null]
+  blocked_userRelation User [not null]
+  user_status UserStatus [not null, default: 'DISCONNECTED']
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [default: `now()`, not null]
+  Game Game [not null]
+  Message Message [not null]
+  group_owner Group [not null]
+  group_admin Group [not null]
+  group_users Group [not null]
+  GroupSanction GroupSanction [not null]
+}
+
+Table Game {
+  id String [pk]
+  players User [not null]
+  status GameState [not null, default: 'WAITING']
+  is_player_a_winner Boolean
+  hardcore Boolean [not null, default: false]
+  game_data Json
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [default: `now()`, not null]
+}
+
+Table Message {
+  id String [pk]
+  sender User [not null]
+  content String [not null]
+  created_at DateTime [default: `now()`, not null]
+  senderId Int [not null]
+  Group Group
+  groupId String
+}
+
+Table Group {
+  id String [pk]
+  owner User [not null]
+  type GroupType [not null, default: 'PUBLIC']
+  password String [not null, default: '']
+  admin User [not null]
+  users User [not null]
+  sanctions GroupSanction [not null]
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [default: `now()`, not null]
+  Message Message [not null]
+  ownerId Int [not null]
+}
+
+Table GroupSanction {
+  id String [pk]
+  group Group [not null]
+  groupId String [not null]
+  sanctioned_user User [not null]
+  sanctioned_userId Int [not null]
+  expired_at DateTime [not null]
+  type SanctionType [not null]
+}
+
+Enum SanctionType {
+  MUTE
+  BAN
+}
+
+Enum GameState {
+  WAITING
+  IN_PROGRESS
+  FINISH
+  FAILED_UNACCEPTED_GAME
+  FAILED_USER_A_QUIT
+  FAILED_USER_B_QUIT
+}
+
+Enum GroupType {
+  PUBLIC
+  PRIVATE_WITH_PASSWORD
+  PRIVATE
+}
+
+Enum UserStatus {
+  IN_GAME
+  CONNECTED
+  DISCONNECTED
+}
+
+Ref: Message.senderId > User.id
+
+Ref: Message.groupId > Group.id
+
+Ref: Group.ownerId > User.id
+
+Ref: GroupSanction.groupId > Group.id [delete: Cascade]
+
+Ref: GroupSanction.sanctioned_userId > User.id
